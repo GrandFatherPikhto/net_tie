@@ -19,7 +19,6 @@ import math
 
 _EPS = 1e-9
 
-
 def teardrop_polygon(r1: float, r2: float, center_dist: float,
                      neck: float, n_points: int = 48):
     """
@@ -86,13 +85,7 @@ def teardrop_polygon(r1: float, r2: float, center_dist: float,
 def equal_radii_contour(r: float, C: float, neck: float, n_points: int = 48):
     """
     Построение контура для случая r1 == r2 == r.
-    Возвращает список (x, y) замкнутого контура (Y вверх, как в teardrop_polygon).
-
-    Используется симметричный мостик:
-      - левая полуокружность (центр -C, радиус r),
-      - правая полуокружность (центр 0, радиус r),
-      - верхняя и нижняя горизонтальные линии на расстоянии neck/2 от оси.
-    Требуется neck/2 <= r (иначе горло шире пада – этот случай не обрабатывается).
+    Возвращает список (x, y) замкнутого контура (Y вверх).
     """
     import math
     _EPS = 1e-9
@@ -104,58 +97,61 @@ def equal_radii_contour(r: float, C: float, neck: float, n_points: int = 48):
             f"диаметр пада ({2*r:.3f} мм). Уменьшите горло или увеличьте диаметр."
         )
 
-    # Точки пересечения горизонтальных линий с окружностями
-    if hw <= r:
-        dx = math.sqrt(r * r - hw * hw)
-    else:
-        dx = 0.0  # не должно случиться из-за проверки
-
-    # Углы для дуг: левая дуга от верхней точки (-C, r) до точки пересечения с y = hw
-    # Угол α1 = π - asin(hw/r) (левая сторона)
-    # Угол α2 = π/2 (верх)
-    alpha_start = math.pi / 2.0
-    alpha_end = math.pi - math.asin(hw / r) if hw < r else math.pi / 2.0
-
-    # Количество точек для каждой части
     n_arc = max(4, n_points // 4)
     n_line = max(2, n_points // 4)
-    # Всего точек в half: n_arc (левая дуга) + n_line (горизонталь) + n_arc (правая дуга)
-    # Округлим, чтобы сумма была близка к n_points, но это не критично
+    points = []
 
-    half = []
+    if abs(hw - r) < _EPS:
+        # ---- Стадион (neck == diameter) ----
+        # 1. Левая полуокружность: от верхней точки (-C, r) к нижней (-C, -r)
+        for i in range(n_arc + 1):
+            alpha = math.pi / 2 - math.pi * i / n_arc   # убывание: pi/2 → -pi/2
+            points.append((-C + r * math.cos(alpha), r * math.sin(alpha)))
 
-    # 1. Левая дуга: от верхней точки до точки пересечения (идём по часовой стрелке? уменьшаем угол)
+        # 2. Нижняя прямая: от (-C, -r) до (0, -r)
+        for i in range(1, n_line + 1):
+            x = -C + C * i / n_line
+            points.append((x, -r))
+
+        # 3. Правая полуокружность: от нижней (0, -r) к верхней (0, r)
+        for i in range(1, n_arc + 1):
+            alpha = -math.pi / 2 + math.pi * i / n_arc   # возрастание: -pi/2 → pi/2
+            points.append((r * math.cos(alpha), r * math.sin(alpha)))
+
+        # 4. Верхняя прямая: от (0, r) до (-C, r)
+        for i in range(1, n_line + 1):
+            x = -C * i / n_line   # i=1 → -C/n_line, i=n_line → -C
+            points.append((x, r))
+
+        return points
+
+    # ---- Общий случай: neck < diameter ----
+    dx = math.sqrt(r * r - hw * hw)
+
+    # Левая дуга: от верхней точки (-C, r) до точки пересечения (-C - dx, hw)
+    alpha_start = math.pi / 2
+    alpha_end = math.pi - math.asin(hw / r) if hw < r else math.pi / 2
     for i in range(n_arc + 1):
-        t = i / n_arc
-        alpha = alpha_start + (alpha_end - alpha_start) * t  # от π/2 до α_end (убывание)
-        x = -C + r * math.cos(alpha)
-        y = r * math.sin(alpha)
-        half.append((x, y))
+        alpha = alpha_start + (alpha_end - alpha_start) * i / n_arc
+        points.append((-C + r * math.cos(alpha), r * math.sin(alpha)))
 
-    # 2. Горизонтальная линия от левой точки пересечения до правой
+    # Верхняя прямая: от (-C - dx, hw) до (dx, hw)
     x_left = -C - dx
     x_right = dx
     for i in range(1, n_line + 1):
-        t = i / n_line
-        x = x_left + (x_right - x_left) * t
-        y = hw
-        half.append((x, y))
+        x = x_left + (x_right - x_left) * i / n_line
+        points.append((x, hw))
 
-    # 3. Правая дуга: от точки пересечения до верхней точки (0, r)
+    # Правая дуга: от (dx, hw) до (dx, -hw) (через правую сторону, убывание угла)
     alpha_start2 = math.asin(hw / r) if hw < r else 0.0
-    alpha_end2 = math.pi / 2.0
+    alpha_end2 = -alpha_start2
     for i in range(1, n_arc + 1):
-        t = i / n_arc
-        alpha = alpha_start2 + (alpha_end2 - alpha_start2) * t
-        x = r * math.cos(alpha)
-        y = r * math.sin(alpha)
-        half.append((x, y))
+        alpha = alpha_start2 + (alpha_end2 - alpha_start2) * i / n_arc
+        points.append((r * math.cos(alpha), r * math.sin(alpha)))
 
-    # Теперь half содержит верхнюю половину контура (y >= 0) слева направо
-    # top — отражение по оси X (нижняя половина)
-    top = [(x, -y) for x, y in half]
-    # bottom — исходные точки в обратном порядке (верхняя половина справа налево)
-    bottom = [(x, y) for x, y in reversed(half)]
+    # Нижняя прямая: от (dx, -hw) до (-C - dx, -hw)
+    for i in range(1, n_line + 1):
+        x = x_right + (x_left - x_right) * i / n_line
+        points.append((x, -hw))
 
-    # Замкнутый контур
-    return top + bottom
+    return points
