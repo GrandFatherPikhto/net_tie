@@ -8,7 +8,7 @@
 		(at 0 -2.7 0)
 		(unlocked yes)
 		(layer "F.SilkS")
-		(uuid "c4ee011a-7419-48b4-9ef5-a66ef0b3be72")
+		(uuid "e70076a3-49ca-4e03-8719-a1ecc312f6bd")
 		(effects
 			(font
 				(size 1 1)
@@ -20,7 +20,7 @@
 		(at 0 2.7 0)
 		(unlocked yes)
 		(layer "F.Fab")
-		(uuid "4e13cfd0-0324-4c90-8110-af1443410323")
+		(uuid "85639621-943a-41e2-8b3e-44e20fae4c2b")
 		(effects
 			(font
 				(size 1 1)
@@ -33,7 +33,7 @@
 		(unlocked yes)
 		(layer "F.Fab")
 		(hide yes)
-		(uuid "9b10f746-22e5-4b6e-8521-05beb615f440")
+		(uuid "85863da6-dcd7-4271-87f9-cc1970af4efe")
 		(effects
 			(font
 				(size 1 1)
@@ -46,7 +46,7 @@
 		(unlocked yes)
 		(layer "F.Fab")
 		(hide yes)
-		(uuid "9a1b2832-2901-401a-9f11-f9d002be55ad")
+		(uuid "379624b7-76b9-4975-97b2-3592448f2fe9")
 		(effects
 			(font
 				(size 1 1)
@@ -54,9 +54,20 @@
 			)
 		)
 	)
-	(attr exclude_from_pos_files exclude_from_bom allow_missing_courtyard)
+	(attr exclude_from_pos_files exclude_from_bom)
 	(net_tie_pad_groups "1,2")
 	(duplicate_pad_numbers_are_jumpers no)
+	(fp_rect
+		(start -2.55 -1.75)
+		(end 1.75 1.75)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.CrtYd")
+		(uuid "8191e51e-f04a-42bc-9e0f-3095b1200205")
+	)
 
 	(fp_poly
 		(pts
@@ -68,13 +79,13 @@
 		)
 		(fill yes)
 		(layer "F.Cu")
-		(uuid "6461b962-c776-4278-aa25-16d02d42b74a")
+		(uuid "d0b9445c-0440-4707-beae-96f36142087c")
 	)
 	(fp_text user "${REFERENCE}"
 		(at 0 4 0)
 		(unlocked yes)
 		(layer "F.Fab")
-		(uuid "1a4ee815-9546-4381-919e-ac20b2123465")
+		(uuid "f52766b0-69bf-4aec-8d2d-b53e3e37727f")
 		(effects
 			(font
 				(size 1 1)
@@ -87,14 +98,14 @@
 		(size 0.65 0.65)
 		(layers "F.Cu")
 		(thermal_bridge_angle 90)
-		(uuid "5ce449cc-31e4-4ba5-b3c7-c081e7159443")
+		(uuid "7c4df3b1-0261-4b21-b1ae-c3a3f8d03e18")
 	)
 	(pad "2" smd circle
 		(at 0 0)
 		(size 3 3)
 		(layers "F.Cu")
 		(thermal_bridge_angle 90)
-		(uuid "16876883-31f1-45e1-b162-7fb250d7f420")
+		(uuid "be2c5fe4-e18a-4bb1-80be-251fd4c759ce")
 	)
 	(embedded_fonts no)
 )
