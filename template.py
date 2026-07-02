@@ -74,13 +74,50 @@ def render_pads(mount: str, x1: float, d1: float, d2: float,
     return pad1 + pad2
 
 
+_COURTYARD = (
+    '\t(fp_rect\n'
+    '\t\t(start {x1} {y1})\n'
+    '\t\t(end {x2} {y2})\n'
+    '\t\t(stroke\n'
+    '\t\t\t(width 0.05)\n'
+    '\t\t\t(type solid)\n'
+    '\t\t)\n'
+    '\t\t(fill no)\n'
+    '\t\t(layer "F.CrtYd")\n'
+    '\t\t(uuid "{uid}")\n'
+    '\t)\n'
+)
+
+
 def render_footprint(name: str, d1: float, d2: float, gap: float, neck: float,
                      mount: str, drill1: float, drill2: float,
                      poly_points, tented: bool = False,
+                     courtyard: bool = True,
+                     courtyard_margin: float = 0.25,
                      template_path: Path | None = None) -> str:
     """Подставляет все поля в шаблон и возвращает готовый .kicad_mod."""
-    r2 = d2 / 2.0
-    x1 = -(d1 / 2.0 + gap + r2)
+    r1, r2 = d1 / 2.0, d2 / 2.0
+    C = r1 + gap + r2
+    x1 = -C
+
+    # Courtyard: прямоугольник вокруг всей меди с запасом courtyard_margin.
+    # Слева медь может выступать за пад на полуширину горла (шапка при neck>d1).
+    # Опционален: нужен только для DRC-правил вида intersectsCourtyard();
+    # с memberOfFootprint() не используется. Без него — allow_missing_courtyard.
+    if courtyard:
+        h = max(neck / 2.0, r1)
+        m = courtyard_margin
+        cy_block = _COURTYARD.format(
+            x1=fmt(round(-(C + max(r1, h) + m), 2)),
+            y1=fmt(-round(r2 + m, 2)),
+            x2=fmt(round(r2 + m, 2)),
+            y2=fmt(round(r2 + m, 2)),
+            uid=uuid.uuid4(),
+        )
+        attr_cy = ""
+    else:
+        cy_block = ""
+        attr_cy = " allow_missing_courtyard"
 
     pts_str = " ".join(f"(xy {fmt(x)} {fmt(y)})" for x, y in poly_points)
     pads_str = render_pads(mount, x1, d1, d2, drill1, drill2, tented)
@@ -98,6 +135,8 @@ def render_footprint(name: str, d1: float, d2: float, gap: float, neck: float,
         neck=fmt(neck),
         gap=fmt(gap),
         desc_uid=uuid.uuid4(),
+        attr_cy=attr_cy,
+        courtyard=cy_block,
         pts=pts_str,
         poly_uid=uuid.uuid4(),
         fab_y=fmt(r2 + 2.5),

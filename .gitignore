@@ -59,4 +59,7 @@ fp-info-cache
 *.exe
 *.app
 
+*.zip
+
 files/
+olddocs/

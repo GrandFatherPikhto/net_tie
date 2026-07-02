@@ -64,6 +64,10 @@ def main() -> int:
                    help="ширина горла вручную, мм (перекрывает расчёт по -i)")
     p.add_argument("--tented", action="store_true",
                    help="закрыть пады паяльной маской (без выреза)")
+    p.add_argument("--no-courtyard", action="store_true",
+                   help="не генерировать courtyard (вернёт allow_missing_courtyard)")
+    p.add_argument("--courtyard-margin", type=float, default=0.25,
+                   help="отступ courtyard от меди, мм")
     p.add_argument("--points", type=int, default=48,
                    help="число точек на половину контура капли")
     p.add_argument("-o", "--outdir", type=Path, default=Path("."),
@@ -116,7 +120,8 @@ def main() -> int:
     poly = geometry.teardrop_polygon(r1, r2, r1 + gap + r2, neck, args.points)
     content = template.render_footprint(
         name, d1, d2, gap, neck, mount, drill1, drill2, poly,
-        tented=args.tented)
+        tented=args.tented, courtyard=not args.no_courtyard,
+        courtyard_margin=args.courtyard_margin)
 
     args.outdir.mkdir(parents=True, exist_ok=True)
     out = args.outdir / fname
