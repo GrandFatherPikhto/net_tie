@@ -1,0 +1,86 @@
+(footprint "{name}"
+	(version 20260206)
+	(generator "kicad_nettie_cli")
+	(generator_version "10.0")
+	(layer "F.Cu")
+	(tags "NetTie net tie teardrop")
+	(property "Reference" "REF**"
+		(at 0 {ref_y} 0)
+		(unlocked yes)
+		(layer "F.SilkS")
+		(uuid "{ref_uid}")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.1)
+			)
+		)
+	)
+	(property "Value" "{name}"
+		(at 0 {val_y} 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(uuid "{val_uid}")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Datasheet" ""
+		(at 0 0 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "{ds_uid}")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Description" "NetTie teardrop {mount_upper}, D1={d1}mm, D2={d2}mm, neck={neck}mm, gap={gap}mm"
+		(at 0 0 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "{desc_uid}")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(attr exclude_from_pos_files exclude_from_bom{attr_cy})
+	(net_tie_pad_groups "1,2")
+	(duplicate_pad_numbers_are_jumpers no)
+{courtyard}
+	(fp_poly
+		(pts
+			{pts}
+		)
+		(stroke
+			(width 0)
+			(type solid)
+		)
+		(fill yes)
+		(layer "F.Cu")
+		(uuid "{poly_uid}")
+	)
+	(fp_text user "${{REFERENCE}}"
+		(at 0 {fab_y} 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(uuid "{text_uid}")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+{pads_str}	(embedded_fonts no)
+)

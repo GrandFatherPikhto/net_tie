@@ -6,6 +6,10 @@ template.py — загрузка текстового шаблона nettie_temp
 Все поля footprint-а живут в текстовом файле шаблона (str.format-плейсхолдеры,
 литеральные фигурные скобки KiCad — удвоенные, например ${{REFERENCE}}).
 Здесь — только подстановка значений и шаблоны падов.
+
+Футпринт всегда рисуется на верхней стороне (F.Cu) — это конвенция KiCad.
+Для установки на нижнюю сторону футпринт переворачивается на плате (клавиша
+F в pcbnew): KiCad сам зеркалит все слои парами F.*→B.* и отражает геометрию.
 """
 
 import uuid
@@ -31,6 +35,20 @@ _PAD_THT = (
     '\t\t(layers {layers})\n'
     '\t\t(remove_unused_layers no)\n'
     '\t\t(thermal_bridge_angle 90)\n'
+    '\t\t(uuid "{uid}")\n'
+    '\t)\n'
+)
+
+_COURTYARD = (
+    '\t(fp_rect\n'
+    '\t\t(start {x1} {y1})\n'
+    '\t\t(end {x2} {y2})\n'
+    '\t\t(stroke\n'
+    '\t\t\t(width 0.05)\n'
+    '\t\t\t(type solid)\n'
+    '\t\t)\n'
+    '\t\t(fill no)\n'
+    '\t\t(layer "F.CrtYd")\n'
     '\t\t(uuid "{uid}")\n'
     '\t)\n'
 )
@@ -72,21 +90,6 @@ def render_pads(mount: str, x1: float, d1: float, d2: float,
         pad2 = _PAD_THT.format(num=2, x=0, d=fmt(d2), dr=fmt(drill2),
                                layers=layers, uid=uuid.uuid4())
     return pad1 + pad2
-
-
-_COURTYARD = (
-    '\t(fp_rect\n'
-    '\t\t(start {x1} {y1})\n'
-    '\t\t(end {x2} {y2})\n'
-    '\t\t(stroke\n'
-    '\t\t\t(width 0.05)\n'
-    '\t\t\t(type solid)\n'
-    '\t\t)\n'
-    '\t\t(fill no)\n'
-    '\t\t(layer "F.CrtYd")\n'
-    '\t\t(uuid "{uid}")\n'
-    '\t)\n'
-)
 
 
 def render_footprint(name: str, d1: float, d2: float, gap: float, neck: float,

@@ -5,13 +5,18 @@ kicad_nettie_cli.py — CLI-генератор каплевидных NetTie-2 f
 для KiCad 10.
 
 Архитектура:
-    ipc_calc.py             — физика: IPC-2221, зазоры, Ондердонк
-    geometry.py             — контур капли (касательная парабола)
-    template.py             — загрузка и рендер текстового шаблона
-    nettie_template.kicad_tpl — все поля footprint-а (текстовый файл)
+    utils/ipc_calc.py              — физика: IPC-2221, зазоры, Ондердонк
+    utils/geometry.py              — контуры: капля и «кость» равных падов
+    utils/args_util.py             — аргументы CLI и подготовка параметров
+    utils/template.py              — загрузка и рендер текстового шаблона
+    utils/nettie_template.kicad_tpl — все поля footprint-а (текстовый файл)
+
+Футпринт всегда генерируется на верхней стороне (F.Cu). Для нижней стороны
+установите его на плату и нажмите F (Flip) — KiCad сам отзеркалит слои.
 
 Примеры:
-    python kicad_nettie_cli.py -v 12 -i 1.0 -d1 0.65 -d2 3.0 -t smd
+    python kicad_nettie_cli.py -v 12 -i 1.0 -d1 0.65 -d2 3.0 -t smd --tented
+    python kicad_nettie_cli.py -v 12 -i 1.0 -d 0.65 -t smd
     python kicad_nettie_cli.py -v 400 -i 5 -d1 1.2 -d2 4.0 -t tht --drill2 2.0
 """
 
@@ -19,21 +24,21 @@ import argparse
 import sys
 
 try:
+    import utils.args_util as args_util
     import utils.geometry as geometry
     import utils.ipc_calc as ipc_calc
     import utils.template as template
-    import utils.args_util as args_util
 except ImportError as e:
-    print(f"❌ Не найден модуль: {e.name}.py — он должен лежать рядом с CLI.",
-          file=sys.stderr)
+    print(f"❌ Не найден модуль '{e.name}' — пакет utils/ должен лежать "
+          f"рядом с CLI.", file=sys.stderr)
     sys.exit(1)
+
 
 def main() -> int:
     p = argparse.ArgumentParser(
         description="Генератор каплевидных NetTie-2 footprint-ов для KiCad 10",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-
     args_util.fill_args(p)
     args = p.parse_args()
 
@@ -43,13 +48,15 @@ def main() -> int:
         print(f"❌ {e}", file=sys.stderr)
         return 1
 
-    # Геометрия
+    # ── Геометрия ─────────────────────────────────────────────────────
     if params.is_pads_equal:
-        poly = geometry.equal_radii_contour(params.r1, params.C, params.neck, args.points)
+        poly = geometry.equal_radii_contour(
+            params.r1, params.C, params.neck, args.points)
     else:
-        poly = geometry.teardrop_polygon(params.r1, params.r2, params.C, params.neck, args.points)
+        poly = geometry.teardrop_polygon(
+            params.r1, params.r2, params.C, params.neck, args.points)
 
-    # Рендер
+    # ── Рендер ────────────────────────────────────────────────────────
     content = template.render_footprint(
         params.name, params.d1, params.d2, params.gap,
         params.neck, params.mount, params.drill1, params.drill2,
@@ -60,7 +67,7 @@ def main() -> int:
     out = args.outdir / params.fname
     out.write_text(content, encoding="utf-8")
 
-    # Сводка
+    # ── Сводка ────────────────────────────────────────────────────────
     i_cont = ipc_calc.ipc_current_a(params.neck, args.temp_rise, args.copper)
     fuse = lambda t: ipc_calc.onderdonk_fusing_a(params.neck, args.copper, t)
     print("🔥 Смузи-парабола готова для KiCad 10!")
@@ -74,7 +81,8 @@ def main() -> int:
     print(f"💥 Плавление:    {fuse(1.0):.0f} А/1с, {fuse(0.01):.0f} А/10мс, "
           f"{fuse(1e-4):.0f} А/100мкс")
     print(f"↔️  Зазор пад-пад: {params.gap:.3f} мм (IPC-2221B ×{args.safety})")
-    print(f"🎭 Маска:        {'закрыта (tented)' if args.tented else 'открытые пады'}")
+    print(f"🎭 Маска:        "
+          f"{'закрыта (tented)' if args.tented else 'открытые пады'}")
     if params.mount == "tht":
         print(f"🕳  Сверловка:    {params.drill1:.2f} / {params.drill2:.2f} мм")
     for w in params.warnings:

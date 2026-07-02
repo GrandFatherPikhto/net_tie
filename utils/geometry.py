@@ -19,6 +19,7 @@ import math
 
 _EPS = 1e-9
 
+
 def teardrop_polygon(r1: float, r2: float, center_dist: float,
                      neck: float, n_points: int = 48):
     """
@@ -82,68 +83,53 @@ def teardrop_polygon(r1: float, r2: float, center_dist: float,
 
     return top + bottom + cap
 
+
 def equal_radii_contour(r: float, C: float, neck: float, n_points: int = 48):
     """
-    Построение контура для случая r1 == r2 == r.
-    Возвращает список (x, y) замкнутого контура (Y вверх).
-    """
-    import math
-    _EPS = 1e-9
+    Контур для случая равных падов r1 == r2 == r: симметричная «кость» —
+    прямая перемычка шириной neck с дугами по краям (ось Y вниз, как в
+    KiCad; контур симметричен, поэтому направление оси не влияет).
 
+    Пады: центры (-C, 0) и (0, 0), радиус r.
+
+    Возвращает список (x, y).
+    """
     hw = neck / 2.0
     if hw > r + _EPS:
         raise ValueError(
             f"При равных диаметрах горло ({neck:.3f} мм) не должно превышать "
-            f"диаметр пада ({2*r:.3f} мм). Уменьшите горло или увеличьте диаметр."
-        )
+            f"диаметр пада ({2 * r:.3f} мм). Уменьшите горло или увеличьте "
+            f"диаметр.")
 
     n_arc = max(4, n_points // 4)
     n_line = max(2, n_points // 4)
     points = []
 
     if abs(hw - r) < _EPS:
-        # ---- Стадион (neck == diameter) ----
-        # 1. Левая полуокружность: от верхней точки (-C, r) к нижней (-C, -r)
-        for i in range(n_arc + 1):
-            alpha = math.pi / 2 - math.pi * i / n_arc   # убывание: pi/2 → -pi/2
-            points.append((-C + r * math.cos(alpha), r * math.sin(alpha)))
-
-        # 2. Нижняя прямая: от (-C, -r) до (0, -r)
-        for i in range(1, n_line + 1):
-            x = -C + C * i / n_line
-            points.append((x, -r))
-
-        # 3. Правая полуокружность: от нижней (0, -r) к верхней (0, r)
-        for i in range(1, n_arc + 1):
-            alpha = -math.pi / 2 + math.pi * i / n_arc   # возрастание: -pi/2 → pi/2
-            points.append((r * math.cos(alpha), r * math.sin(alpha)))
-
-        # 4. Верхняя прямая: от (0, r) до (-C, r)
-        for i in range(1, n_line + 1):
-            x = -C * i / n_line   # i=1 → -C/n_line, i=n_line → -C
-            points.append((x, r))
-
+        # ── Стадион (neck == diameter): прямоугольник между падами ────
+        # Полуокружности падов накрывают торцы, полигону достаточно
+        # прямоугольника от центра до центра.
+        points = [(-C, -r), (0.0, -r), (0.0, r), (-C, r)]
         return points
 
-    # ---- Общий случай: neck < diameter ----
+    # ── Общий случай: neck < diameter — «кость» ──────────────────────
     dx = math.sqrt(r * r - hw * hw)
 
-    # Левая дуга: от верхней точки (-C, r) до точки пересечения (-C - dx, hw)
+    # Левая дуга: от вершины (-C, r) наружу до точки (-C - dx, hw)
     alpha_start = math.pi / 2
-    alpha_end = math.pi - math.asin(hw / r) if hw < r else math.pi / 2
+    alpha_end = math.pi - math.asin(hw / r)
     for i in range(n_arc + 1):
         alpha = alpha_start + (alpha_end - alpha_start) * i / n_arc
         points.append((-C + r * math.cos(alpha), r * math.sin(alpha)))
 
     # Верхняя прямая: от (-C - dx, hw) до (dx, hw)
-    x_left = -C - dx
-    x_right = dx
+    x_left, x_right = -C - dx, dx
     for i in range(1, n_line + 1):
         x = x_left + (x_right - x_left) * i / n_line
         points.append((x, hw))
 
-    # Правая дуга: от (dx, hw) до (dx, -hw) (через правую сторону, убывание угла)
-    alpha_start2 = math.asin(hw / r) if hw < r else 0.0
+    # Правая дуга: от (dx, hw) через (r, 0) до (dx, -hw)
+    alpha_start2 = math.asin(hw / r)
     alpha_end2 = -alpha_start2
     for i in range(1, n_arc + 1):
         alpha = alpha_start2 + (alpha_end2 - alpha_start2) * i / n_arc

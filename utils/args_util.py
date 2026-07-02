@@ -1,23 +1,23 @@
 # -*- coding: utf-8 -*-
+"""
+args_util.py — аргументы CLI и подготовка параметров генерации.
+"""
 
-import sys
 from pathlib import Path
 from types import SimpleNamespace
 
-try:
-    import utils.ipc_calc as ipc_calc
-except ImportError as e:
-    print(f"❌ Не найден модуль: {e.name}.py — он должен лежать рядом с CLI.",
-          file=sys.stderr)
-    sys.exit(1)
+from . import ipc_calc
+
+_EPS = 1e-9
+
 
 def fill_args(p):
     p.add_argument("-d", type=float,
-                   help="Диаметр падов (если они равны), мм")
+                   help="диаметр обоих падов (если они равны), мм")
     p.add_argument("-d1", type=float,
-                   help="диаметр большого пада, мм")
-    p.add_argument("-d2", type=float,
                    help="диаметр малого пада, мм")
+    p.add_argument("-d2", type=float,
+                   help="диаметр большого пада, мм")
 
     p.add_argument("-v", "--voltage", type=float, required=True,
                    help="рабочее напряжение, В (→ зазор/длина перехода по IPC-2221B)")
@@ -52,50 +52,49 @@ def fill_args(p):
     p.add_argument("--points", type=int, default=48,
                    help="число точек на половину контура капли")
     p.add_argument("-o", "--outdir", type=Path, default=Path("."),
-                   help="каталог для сохранения")    
+                   help="каталог для сохранения")
+
 
 def prepare_nettie_args(args):
     """
-    Разбирает аргументы командной строки, вычисляет все необходимые параметры
-    и возвращает SimpleNamespace с ними.
+    Проверяет аргументы, вычисляет все параметры генерации
+    и возвращает их в SimpleNamespace.
     """
-    # Маленький эпсилон для сравнения
-    _EPS = 1e-9
-
-
-    # Проверка наличия диаметров
+    # ── Диаметры ──────────────────────────────────────────────────────
     if args.d is None and args.d1 is None and args.d2 is None:
-        raise ValueError("Необходимо указать диаметры: либо '-d', либо оба '-d1' и '-d2'")
+        raise ValueError(
+            "Необходимо указать диаметры: либо '-d', либо оба '-d1' и '-d2'.")
     if args.d is not None and (args.d1 is not None or args.d2 is not None):
-        raise ValueError("Нельзя использовать -d одновременно с -d1 или -d2")
-    if (args.d1 is not None and args.d2 is None) or (args.d2 is not None and args.d1 is None):
-        raise ValueError("-d1 и -d2 должны указываться ТОЛЬКО вместе")
+        raise ValueError("Нельзя использовать -d одновременно с -d1 или -d2.")
+    if (args.d1 is None) != (args.d2 is None):
+        raise ValueError("-d1 и -d2 должны указываться только вместе.")
 
-    # Определяем d1, d2 и флаг равенства
     if args.d is not None:
-        d1 = args.d
-        d2 = args.d
+        d1 = d2 = args.d
         is_pads_equal = True
     else:
         d1, d2 = args.d1, args.d2
-        if d1 <= 0 or d2 <= 0:
-            raise ValueError("Диаметры должны быть положительными.")
         if d1 > d2:
             d1, d2 = d2, d1
             print("⚠️  d1 > d2 — поменял местами: пад 1 всегда малый.")
         is_pads_equal = abs(d1 - d2) < _EPS
 
-    # Горло по току
+    if d1 <= 0 or d2 <= 0:
+        raise ValueError("Диаметры должны быть положительными.")
+
+    # ── Горло по току: IPC-минимум × запас ────────────────────────────
     neck_ipc = round(ipc_calc.ipc_neck_width_mm(
         args.current, args.temp_rise, args.copper), 3)
-    # Если диаметры равны и neck не задан вручную, приравниваем neck к диаметру
-    if is_pads_equal and args.neck is None:
-        neck = d1
-    else:        
-        neck = args.neck if args.neck is not None else round(
-            neck_ipc * args.neck_safety, 3)
+    neck_required = round(neck_ipc * args.neck_safety, 3)
 
-    # Зазор
+    if args.neck is not None:
+        neck = args.neck
+    elif is_pads_equal:
+        neck = d1            # стадион: горло во всю ширину пада
+    else:
+        neck = neck_required
+
+    # ── Зазор по напряжению ───────────────────────────────────────────
     if args.gap is not None:
         gap = args.gap
     else:
@@ -103,13 +102,19 @@ def prepare_nettie_args(args):
                   args.min_gap)
     gap = round(gap, 3)
 
-    # Предупреждения
+    # ── Проверки и предупреждения ─────────────────────────────────────
     warnings = []
     if is_pads_equal:
-        if neck > d1 or neck > d2:
-            warnings.append(
-                f"горло {neck:.3f} мм шире пада d={d1:.2f} мм — "
-                f"контур расширен шапкой; проверь ширину подходящей дорожки")
+        if neck > d1 + _EPS:
+            raise ValueError(
+                f"Горло {neck:.3f} мм > диаметра падов {d1:.2f} мм — "
+                f"увеличьте -d или уменьшите --neck.")
+        if neck_required > d1 + _EPS:
+            raise ValueError(
+                f"Ток требует горло {neck_required:.3f} мм "
+                f"(IPC {neck_ipc:.3f} × {args.neck_safety:g}), а диаметр "
+                f"падов всего {d1:.2f} мм — увеличьте -d, уменьшите ток "
+                f"или запас -k.")
     else:
         if neck > d1:
             warnings.append(
@@ -120,6 +125,7 @@ def prepare_nettie_args(args):
                 f"Горло {neck:.3f} мм ≥ d2={d2:.2f} мм. Увеличьте d2, "
                 f"уменьшите ток или запас -k.")
 
+    # ── Производные величины ──────────────────────────────────────────
     L = d1 + d2 + gap
     mount = args.type
     drill1 = args.drill1 if args.drill1 is not None else d1 / 2.0

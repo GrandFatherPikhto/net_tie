@@ -1,0 +1,111 @@
+(footprint "NetTie-2_SMD_D1-0.65_D2-0.65_L-1.65mm_Tented"
+	(version 20260206)
+	(generator "kicad_nettie_cli")
+	(generator_version "10.0")
+	(layer "F.Cu")
+	(tags "NetTie net tie teardrop")
+	(property "Reference" "REF**"
+		(at 0 -1.525 0)
+		(unlocked yes)
+		(layer "F.SilkS")
+		(uuid "f0369c56-e64f-4d09-8c99-f63eb7f5ed75")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.1)
+			)
+		)
+	)
+	(property "Value" "NetTie-2_SMD_D1-0.65_D2-0.65_L-1.65mm_Tented"
+		(at 0 1.525 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(uuid "67664fe8-f05b-461c-96ce-42de0f9baf96")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Datasheet" ""
+		(at 0 0 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "1bc2a3d7-d1ae-4392-8507-751811dbb5a3")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Description" "NetTie teardrop SMD, D1=0.65mm, D2=0.65mm, neck=0.3mm, gap=0.35mm"
+		(at 0 0 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "f6d155ee-50d5-4f0b-b865-737430de138e")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(attr exclude_from_pos_files exclude_from_bom)
+	(net_tie_pad_groups "1,2")
+	(duplicate_pad_numbers_are_jumpers no)
+	(fp_rect
+		(start -1.57 -0.57)
+		(end 0.57 0.57)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.CrtYd")
+		(uuid "b31e6069-a2cc-4ef3-b875-29c46b4b49d0")
+	)
+
+	(fp_poly
+		(pts
+			(xy -1 0.325) (xy -1.029509 0.323658) (xy -1.058774 0.319641) (xy -1.087554 0.312984) (xy -1.11561 0.303742) (xy -1.142712 0.29199) (xy -1.168634 0.277826) (xy -1.193163 0.261367) (xy -1.216097 0.242749) (xy -1.237245 0.222125) (xy -1.256434 0.199667) (xy -1.273504 0.175558) (xy -1.288314 0.15) (xy -1.156928 0.15) (xy -1.025543 0.15) (xy -0.894157 0.15) (xy -0.762771 0.15) (xy -0.631386 0.15) (xy -0.5 0.15) (xy -0.368614 0.15) (xy -0.237229 0.15) (xy -0.105843 0.15) (xy 0.025543 0.15) (xy 0.156928 0.15) (xy 0.288314 0.15) (xy 0.299373 0.126493) (xy 0.30852 0.102178) (xy 0.315695 0.077211) (xy 0.320854 0.051749) (xy 0.323962 0.025958) (xy 0.325 0) (xy 0.323962 -0.025958) (xy 0.320854 -0.051749) (xy 0.315695 -0.077211) (xy 0.30852 -0.102178) (xy 0.299373 -0.126493) (xy 0.288314 -0.15) (xy 0.156928 -0.15) (xy 0.025543 -0.15) (xy -0.105843 -0.15) (xy -0.237229 -0.15) (xy -0.368614 -0.15) (xy -0.5 -0.15) (xy -0.631386 -0.15) (xy -0.762771 -0.15) (xy -0.894157 -0.15) (xy -1.025543 -0.15) (xy -1.156928 -0.15) (xy -1.288314 -0.15)
+		)
+		(stroke
+			(width 0)
+			(type solid)
+		)
+		(fill yes)
+		(layer "F.Cu")
+		(uuid "f716a1ab-0fb4-4f0b-a9a2-06512fc60c3b")
+	)
+	(fp_text user "${REFERENCE}"
+		(at 0 2.825 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(uuid "ac958e62-233f-4884-a6aa-9d48455b8bbf")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(pad "1" smd circle
+		(at -1 0)
+		(size 0.65 0.65)
+		(layers "F.Cu")
+		(thermal_bridge_angle 90)
+		(uuid "3dd5fbc9-7c27-4b09-8e40-c017f7bf0211")
+	)
+	(pad "2" smd circle
+		(at 0 0)
+		(size 0.65 0.65)
+		(layers "F.Cu")
+		(thermal_bridge_angle 90)
+		(uuid "8260976f-a852-4f37-a839-5814be08ceea")
+	)
+	(embedded_fonts no)
+)
