@@ -28,20 +28,26 @@ except ImportError as e:
           file=sys.stderr)
     sys.exit(1)
 
+# Маленький эпсилон для сравнения
+_EPS = 1e-9
 
 def main() -> int:
     p = argparse.ArgumentParser(
         description="Генератор каплевидных NetTie-2 footprint-ов для KiCad 10",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
+
+    p.add_argument("-d", type=float,
+                   help="Диаметр падов (если они равны), мм")
+    p.add_argument("-d1", type=float,
+                   help="диаметр большого пада, мм")
+    p.add_argument("-d2", type=float,
+                   help="диаметр малого пада, мм")
+
     p.add_argument("-v", "--voltage", type=float, required=True,
                    help="рабочее напряжение, В (→ зазор/длина перехода по IPC-2221B)")
     p.add_argument("-i", "--current", type=float, required=True,
                    help="максимальный ток (RMS для импульсных схем), А")
-    p.add_argument("-d1", type=float, required=True,
-                   help="диаметр малого пада, мм")
-    p.add_argument("-d2", type=float, required=True,
-                   help="диаметр большого пада, мм")
     p.add_argument("-t", "--type", choices=("smd", "tht"), default="smd",
                    help="тип монтажа")
     p.add_argument("--drill1", type=float, default=None,
@@ -74,12 +80,36 @@ def main() -> int:
                    help="каталог для сохранения")
     args = p.parse_args()
 
-    d1, d2 = args.d1, args.d2
-    if d1 <= 0 or d2 <= 0:
-        p.error("Диаметры должны быть положительными.")
-    if d1 > d2:
-        d1, d2 = d2, d1
-        print("⚠️  d1 > d2 — поменял местами: пад 1 всегда малый.")
+    # 1. Проверяем, что пользователь вообще хоть что-то ввел
+    if args.d is None and args.d1 is None and args.d2 is None:
+        p.error("Необходимо указать диаметры: либо '-d', либо оба '-d1' и '-d2'")
+
+    # 2. Проверяем конфликт: нельзя вводить одиночный -d вместе с парами
+    if args.d is not None and (args.d1 is not None or args.d2 is not None):
+        p.error("Нельзя использовать аргумент -d одновременно с -d1 или -d2")
+
+    # 3. Проверяем полноту пары: если ввели d1, то d2 обязан быть, и наоборот
+    if (args.d1 is not None and args.d2 is None) or (args.d2 is not None and args.d1 is None):
+        p.error("Аргументы -d1 и -d2 должны указываться ТОЛЬКО вместе")
+
+    is_pads_equal = False
+    
+    if args.d is not None:
+        d1 = args.d
+        d2 = args.d
+        print(f"d1 = {d1}, d2={d2}")
+        is_pads_equal = True
+    else:
+        d1, d2 = args.d1, args.d2
+        if d1 <= 0 or d2 <= 0:
+            p.error("Диаметры должны быть положительными.")
+        if d1 > d2:
+            d1, d2 = d2, d1
+            print("⚠️  d1 > d2 — поменял местами: пад 1 всегда малый.")
+        if abs(d1 - d2) < _EPS:
+            is_pads_equal = True
+        else:
+            is_pads_equal = False
 
     # ── Горло по току: IPC-минимум × запас ────────────────────────────
     neck_ipc = round(ipc_calc.ipc_neck_width_mm(
@@ -96,14 +126,20 @@ def main() -> int:
     gap = round(gap, 3)
 
     warnings = []
-    if neck > d1:
-        warnings.append(
-            f"горло {neck:.3f} мм шире малого пада d1={d1:.2f} мм — "
+    if is_pads_equal:
+        if neck > d1 or neck > d2:
+            warnings.append(
+            f"горло {neck:.3f} мм шире пада d={d1:.2f} мм — "
             f"контур расширен шапкой; проверь ширину подходящей дорожки")
-    if neck >= d2:
-        print(f"❌ Горло {neck:.3f} мм ≥ d2={d2:.2f} мм. Увеличьте d2, "
-              f"уменьшите ток или запас -k.", file=sys.stderr)
-        return 1
+    else:
+        if neck > d1:
+            warnings.append(
+                f"горло {neck:.3f} мм шире малого пада d1={d1:.2f} мм — "
+                f"контур расширен шапкой; проверь ширину подходящей дорожки")
+        if  neck >= d2:
+            print(f"❌ Горло {neck:.3f} мм ≥ d2={d2:.2f} мм. Увеличьте d2, "
+                f"уменьшите ток или запас -k.", file=sys.stderr)
+            return 1
 
     L = d1 + d2 + gap
     mount = args.type
@@ -117,7 +153,14 @@ def main() -> int:
 
     # ── Геометрия и рендер ────────────────────────────────────────────
     r1, r2 = d1 / 2.0, d2 / 2.0
-    poly = geometry.teardrop_polygon(r1, r2, r1 + gap + r2, neck, args.points)
+    C = r1 + gap + r2 # center_dist
+
+    if is_pads_equal:
+        # для равных радиусов используем симметричный мостик
+        poly = geometry.equal_radii_contour(r1, C, neck, args.points)
+    else:
+        poly = geometry.teardrop_polygon(r1, r2, r1 + gap + r2, neck, args.points)
+
     content = template.render_footprint(
         name, d1, d2, gap, neck, mount, drill1, drill2, poly,
         tented=args.tented, courtyard=not args.no_courtyard,
