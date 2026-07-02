@@ -166,17 +166,27 @@ text = template.render_footprint("MyNetTie", 0.65, 3.0, 0.15, neck,
 локальное DRC-правило, привязанное к courtyard конкретной связки
 (*Файл → Параметры платы → Собственные правила*):
 
-```
+```lisp
 (rule "NetTie_NT1_local"
    (condition "A.intersectsCourtyard('NT1') && B.intersectsCourtyard('NT1')")
    (constraint clearance (min 0.15mm)))
 ```
+
+или для всех элементов, начинающихся с `NT*`
+
+```lisp
+(rule "NetTie_All_Universal_Courtyard"
+   (condition "A.insideCourtyard('NT*') || B.insideCourtyard('NT*')")
+   (constraint clearance (min 0.15mm)))
+```
+
 
 Правило действует только внутри courtyard футпринта `NT1`, переезжает вместе
 с ним и не ослабляет зазоры цепей на остальной плате. Глобальное правило по
 паре имён цепей (`A.NetName == ... && B.NetName == ...`) использовать не стоит:
 оно срабатывает везде, где эти цепи соседствуют, и заливка «толстой» цепи
 подползёт к сигнальной дорожке по всей плате.
+
 
 ## Ограничения и здравый смысл
 
